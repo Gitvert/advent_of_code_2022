@@ -3,6 +3,7 @@ import java.io.File
 fun main(args: Array<String>) {
 
     day1(readFile("day01.txt"))
+    day2(readFile("day02.txt"))
 }
 
 fun readFile(fileName: String): List<String> {
