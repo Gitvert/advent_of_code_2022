@@ -33,5 +33,4 @@ fun day2(lines: List<String>) {
 
     println("Day 2 part 1: $totalScorePart1")
     println("Day 2 part 2: $totalScorePart2")
-    println()
 }

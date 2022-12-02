@@ -1,9 +1,13 @@
 import java.io.File
 
+val daySolvers = listOf(::day1, ::day2)
+
 fun main(args: Array<String>) {
 
-    day1(readFile("day01.txt"))
-    day2(readFile("day02.txt"))
+    for (i in 1..daySolvers.size) {
+        daySolvers[i-1](readFile("day$i.txt"))
+        println()
+    }
 }
 
 fun readFile(fileName: String): List<String> {

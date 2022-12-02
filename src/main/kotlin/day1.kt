@@ -14,5 +14,4 @@ fun day1(lines: List<String>) {
     calorieList.sortDescending()
     println("Day 1 part 1: " + calorieList[0])
     println("Day 1 part 2: " + (calorieList[0] + calorieList[1] + calorieList[2]))
-    println()
 }
