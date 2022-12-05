@@ -1,6 +1,6 @@
 import java.io.File
 
-val daySolvers = listOf(::day1, ::day2, ::day3, ::day4)
+val daySolvers = listOf(::day1, ::day2, ::day3, ::day4, ::day5)
 
 fun main(args: Array<String>) {
 
