@@ -86,6 +86,4 @@ fun getManhattanDistance(left: Position, right: Position): Int {
     return abs(left.x - right.x) + abs(left.y - right.y)
 }
 
-data class Position(val x: Int, val y: Int)
-
 data class Sensor(val position: Position, val closestBeacon: Position, val closestBeaconDistance: Int)

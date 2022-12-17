@@ -1,6 +1,6 @@
 import java.io.File
 
-val daySolvers = listOf(::day1, ::day2, ::day3, ::day4, ::day5, ::day6, ::day7, ::day8, ::day9, ::day10, ::day11, ::day12, ::day13, ::day14, ::day15)
+val daySolvers = listOf(::day1, ::day2, ::day3, ::day4, ::day5, ::day6, ::day7, ::day8, ::day9, ::day10, ::day11, ::day12, ::day13, ::day14, ::day15, ::day16, ::day17)
 
 fun main(args: Array<String>) {
 
@@ -17,3 +17,5 @@ fun readFile(fileName: String): List<String> {
 
     return lines
 }
+
+data class Position(val x: Int, val y: Int)
