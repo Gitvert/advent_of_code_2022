@@ -2,25 +2,197 @@ fun day16(lines: List<String>) {
     val valves = parseValves(lines)
     val valvesToOpenCount = valves.values.map { it.flowRate }.filter { it > 0 }.size
     
-    val startState = ValveState(0, 0, valves["AA"]!!.name, "AA", mutableSetOf(), 0, mutableMapOf())
-    
-    val potentialStates = mutableSetOf(startState)
+    val potentialStatesPart1 = mutableSetOf(ValveState(
+        0, 
+        0, 
+        valves["AA"]!!.name, 
+        "AA", 
+        mutableSetOf(), 
+        0, 
+        mutableMapOf()
+    ))
 
     for (i in 1..30) {
-        println("Starting minute $i")
-        potentialStates.forEach {
+        potentialStatesPart1.forEach {
             it.totalPressureReleased += it.totalFlowRate
         }
-        takeAction(potentialStates, valves, valvesToOpenCount)
-        removeBadStates(potentialStates)
+        
+        takeActionAlone(potentialStatesPart1, valves, valvesToOpenCount)
+        removeSoloBadStates(potentialStatesPart1)
     }
     
-    val answer = potentialStates.maxOf { it.totalPressureReleased }
+    val part1Answer = potentialStatesPart1.maxOf { it.totalPressureReleased }
+
+    println("Day 16 part 1: $part1Answer")
     
-    println("Day 16 part 1: $answer")
+    val potentialStatesPart2 = mutableSetOf(ValveDuoState(
+        0,
+        0,
+        valves["AA"]!!.name,
+        valves["AA"]!!.name,
+        "AA",
+        "AA",
+        mutableSetOf(),
+        0,
+        0,
+        mutableMapOf("AA" to 1)
+    ))
+    
+    for (i in 1..26) {
+        println("Starting minute $i")
+        potentialStatesPart2.forEach {
+            it.totalPressureReleased += it.totalFlowRate
+        }
+        
+        takeActionTogether(potentialStatesPart2, valves, valvesToOpenCount)
+        removeDuoBadStates(potentialStatesPart2)
+    }
+
+    val part2Answer = potentialStatesPart2.maxOf { it.totalPressureReleased }
+
+    println("Day 16 part 2: $part2Answer")
 }
 
-fun takeAction(potentialStates: MutableSet<ValveState>, valves: Map<String, Valve>, valvesToOpenCount: Int) {
+fun takeActionTogether(potentialStates: MutableSet<ValveDuoState>, valves: Map<String, Valve>, valvesToOpenCount: Int) {
+    val newStates = mutableSetOf<ValveDuoState>()
+
+    potentialStates.forEach { state ->
+        if (state.openValves.size == valvesToOpenCount) {
+            newStates.add(
+                ValveDuoState(
+                    state.totalFlowRate,
+                    state.totalPressureReleased,
+                    state.playerCurrentValve,
+                    state.elephantCurrentValve,
+                    state.playerMoveOrder,
+                    state.elephantMoveOrder,
+                    state.openValves,
+                    state.playerLoopCounter,
+                    state.elephantLoopCounter,
+                    state.neighborsVisited.toMutableMap(),
+                )
+            )
+        } else {
+            val currentPlayerValve = valves[state.playerCurrentValve]!!
+            val currentElephantValve = valves[state.elephantCurrentValve]!!
+            
+            if (!state.openValves.contains(currentPlayerValve.name) && currentPlayerValve.flowRate > 0) {
+                addOpenValveState(newStates, state, currentPlayerValve)
+            }
+
+            if (!state.openValves.contains(currentElephantValve.name) && currentElephantValve.flowRate > 0) {
+                addOpenValveState(newStates, state, currentElephantValve)
+            }
+
+            val playerNeighbours = currentPlayerValve.neighbours
+            val elephantNeighbors = currentElephantValve.neighbours
+
+            playerNeighbours.forEach { playerNeighbour ->
+                val playerPrevVisited = if (state.playerMoveOrder.length > 3) {
+                    state.playerMoveOrder.reversed().subSequence(2, 4).reversed()
+                } else {
+                    " "
+                }.toString()
+
+                elephantNeighbors.forEach { elephantNeighbour ->
+                    val elephantPrevVisited = if (state.elephantMoveOrder.length > 3) {
+                        state.elephantMoveOrder.reversed().subSequence(2, 4).reversed()
+                    } else {
+                        " "
+                    }.toString()
+                    val neighborsVisited = state.neighborsVisited.toMutableMap()
+                    
+                    
+                    if (neighborsVisited.containsKey(elephantNeighbour.name)) {
+                        neighborsVisited[elephantNeighbour.name] = neighborsVisited[elephantNeighbour.name]!! + 1
+                    } else {
+                        neighborsVisited[elephantNeighbour.name] = 1
+                    }
+
+                    if (neighborsVisited.containsKey(playerNeighbour.name)) {
+                        neighborsVisited[playerNeighbour.name] = neighborsVisited[playerNeighbour.name]!! + 1
+                    } else {
+                        neighborsVisited[playerNeighbour.name] = 1
+                    }
+
+                    newStates.add(
+                        ValveDuoState(
+                            state.totalFlowRate,
+                            state.totalPressureReleased,
+                            playerNeighbour.name,
+                            elephantNeighbour.name,
+                            state.playerMoveOrder + playerNeighbour.name,
+                            state.elephantMoveOrder + elephantNeighbour.name,
+                            state.openValves,
+                            if (playerPrevVisited == playerNeighbour.name) {
+                                state.playerLoopCounter + 1
+                            } else {
+                                0
+                            },
+                            if (elephantPrevVisited == elephantNeighbour.name) {
+                                state.playerLoopCounter + 1
+                            } else {
+                                0
+                            },
+                            neighborsVisited
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    potentialStates.clear()
+    potentialStates.addAll(newStates)
+}
+
+fun addOpenValveState(newStates: MutableSet<ValveDuoState>, state: ValveDuoState, currentValve: Valve) {
+    newStates.add(
+        ValveDuoState(
+            state.totalFlowRate + currentValve.flowRate,
+            state.totalPressureReleased,
+            state.playerCurrentValve,
+            state.elephantCurrentValve,
+            state.playerMoveOrder,
+            state.elephantMoveOrder,
+            state.openValves.plus(currentValve.name).toMutableSet(),
+            state.playerLoopCounter,
+            state.elephantLoopCounter,
+            state.neighborsVisited.toMutableMap(),
+        )
+    )
+}
+
+fun removeDuoBadStates(potentialStates: MutableSet<ValveDuoState>) {
+    val bestFlowRate = potentialStates.maxOf { it.totalFlowRate }
+    val bestPressureReleased = potentialStates.maxOf { it.totalPressureReleased }
+
+    val indexesToRemove = mutableSetOf<Int>()
+
+    potentialStates.toList().forEachIndexed { index, it ->
+        if (it.playerLoopCounter > 1 || it.elephantLoopCounter > 1 || it.totalFlowRate + 30 <= bestFlowRate || (it.totalFlowRate + 25 <= bestFlowRate && it.totalPressureReleased < bestPressureReleased)) {
+            indexesToRemove.add(index)
+        }
+
+        if (it.neighborsVisited.values.max() > 3) {
+            indexesToRemove.add(index)
+        }
+        
+        if (it.playerMoveOrder.length > 3 && it.playerMoveOrder == it.elephantMoveOrder) {
+            indexesToRemove.add(index)
+        }
+    }
+
+    val statesList = potentialStates.toMutableList()
+    indexesToRemove.reversed().forEach {
+        statesList.removeAt(it)
+    }
+
+    potentialStates.clear()
+    potentialStates.addAll(statesList)
+}
+
+fun takeActionAlone(potentialStates: MutableSet<ValveState>, valves: Map<String, Valve>, valvesToOpenCount: Int) {
     val newStates = mutableSetOf<ValveState>()
     
     potentialStates.forEach { state ->
@@ -91,13 +263,14 @@ fun takeAction(potentialStates: MutableSet<ValveState>, valves: Map<String, Valv
     potentialStates.addAll(newStates)
 }
 
-fun removeBadStates(potentialStates: MutableSet<ValveState>) {
+fun removeSoloBadStates(potentialStates: MutableSet<ValveState>) {
     val bestFlowRate = potentialStates.maxOf { it.totalFlowRate }
+    val bestPressureReleased = potentialStates.maxOf { it.totalPressureReleased }
     
     val indexesToRemove = mutableSetOf<Int>()
     
     potentialStates.toList().forEachIndexed { index, it ->
-        if (it.loopCounter > 1 || (it.totalFlowRate + 30 <= bestFlowRate)) {
+        if (it.loopCounter > 1 || (it.totalFlowRate + 30 <= bestFlowRate) || (it.totalFlowRate + 25 <= bestFlowRate && it.totalPressureReleased < bestPressureReleased)) {
             indexesToRemove.add(index)
         }
         
@@ -115,7 +288,7 @@ fun removeBadStates(potentialStates: MutableSet<ValveState>) {
     potentialStates.addAll(statesList)
 }
 
-fun parseValves(lines: List<String>): MutableMap<String, Valve> {
+fun parseValves(lines: List<String>): Map<String, Valve> {
     val valves = mutableMapOf<String, Valve>()
     
     lines.forEach { 
@@ -138,19 +311,27 @@ fun parseValves(lines: List<String>): MutableMap<String, Valve> {
     return valves
 }
 
-data class Valve(val name: String, val flowRate: Int, val neighbours: MutableList<Valve>) {
-    override fun hashCode(): Int {
-        return name.hashCode() + flowRate.hashCode()
-    }
+data class Valve(val name: String, val flowRate: Int, val neighbours: MutableList<Valve>)
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) { return true }
-        if (other!!.javaClass != javaClass) { return false }
-        
-        other as Valve
+data class ValveState(
+    var totalFlowRate: Int, 
+    var totalPressureReleased: Int, 
+    var currentValve: String, 
+    var moveOrder: String, 
+    val openValves: MutableSet<String>, 
+    var loopCounter: Int, 
+    val neighborsVisited: MutableMap<String, Int>
+)
 
-        return name == other.name && flowRate == other.flowRate
-    }
-}
-
-data class ValveState(var totalFlowRate: Int, var totalPressureReleased: Int, var currentValve: String, var moveOrder: String, val openValves: MutableSet<String>, var loopCounter: Int, val neighborsVisited: MutableMap<String, Int>)
+data class ValveDuoState(
+    var totalFlowRate: Int,
+    var totalPressureReleased: Int,
+    var playerCurrentValve: String,
+    var elephantCurrentValve: String,
+    var playerMoveOrder: String,
+    var elephantMoveOrder: String,
+    val openValves: MutableSet<String>,
+    var playerLoopCounter: Int,
+    var elephantLoopCounter: Int,
+    val neighborsVisited: MutableMap<String, Int>,
+)
