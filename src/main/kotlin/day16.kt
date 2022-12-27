@@ -39,13 +39,14 @@ fun day16(lines: List<String>) {
     ))
     
     for (i in 1..26) {
-        println("Starting minute $i, releasing ${potentialStatesPart2.maxOf{ it.totalFlowRate }}")
         potentialStatesPart2.forEach {
             it.totalPressureReleased += it.totalFlowRate
         }
         
-        takeActionTogether(potentialStatesPart2, valves, maxPossibleFlow)
-        removeDuoBadStates(potentialStatesPart2)
+        if (i < 26) { 
+            takeActionTogether(potentialStatesPart2, valves, maxPossibleFlow)
+            removeDuoBadStates(potentialStatesPart2, maxPossibleFlow, 26 - i)
+        }
     }
 
     val part2Answer = potentialStatesPart2.maxOf { it.totalPressureReleased }
@@ -228,22 +229,43 @@ fun getOpenValveState(currentValve: Valve): ValveToOpen {
     return ValveToOpen(currentValve.flowRate, currentValve.name)
 }
 
-fun removeDuoBadStates(potentialStates: MutableSet<ValveDuoState>) {
+fun removeDuoBadStates(potentialStates: MutableSet<ValveDuoState>, maxPossibleFlow: Int, minutesLeft: Int) {
     val bestFlowRate = potentialStates.maxOf { it.totalFlowRate }
+    val bestPressureReleased = potentialStates.maxOf { it.totalPressureReleased }
+    val flowRateFromBestPressureReleased = potentialStates.maxBy { it.totalPressureReleased }.totalFlowRate
 
     val indexesToRemove = mutableSetOf<Int>()
 
     potentialStates.toList().forEachIndexed { index, it ->
-        if (it.playerLoopCounter > 1 || it.elephantLoopCounter > 1 || it.totalFlowRate + 30 <= bestFlowRate) {
-            indexesToRemove.add(index)
-        }
-
-        if (it.neighborsVisited.values.max() > 3) {
+        if (it.playerLoopCounter > 1 || it.elephantLoopCounter > 1) { //Remove states walking in loops
             indexesToRemove.add(index)
         }
         
-        if (it.playerMoveOrder.length > 5 && it.playerMoveOrder == it.elephantMoveOrder) {
+        if (it.totalFlowRate + 35 <= bestFlowRate) { // Remove states with bad flow rate
             indexesToRemove.add(index)
+        }
+
+        if (it.neighborsVisited.values.max() > 3) { // Remove states that visited the same node too many times
+            indexesToRemove.add(index)
+        }
+        
+        if (it.playerMoveOrder.length > 3 && it.playerMoveOrder == it.elephantMoveOrder) { // Remove states that walked the same path
+            indexesToRemove.add(index)
+        }
+        
+        if (it.totalPressureReleased + 100 < bestPressureReleased) { // Remove states where pressure released is very far behind
+            indexesToRemove.add(index)
+        }
+        
+        if (minutesLeft < 6) {
+            if (it.totalPressureReleased < bestPressureReleased) {
+                val worstFromOtherState = bestPressureReleased + (flowRateFromBestPressureReleased * minutesLeft)
+                val bestFromThisState = it.totalPressureReleased + (maxPossibleFlow * minutesLeft)
+                
+                if (bestFromThisState < worstFromOtherState) {
+                    indexesToRemove.add(index)
+                }
+            }
         }
     }
 
