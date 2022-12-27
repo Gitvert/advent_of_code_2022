@@ -4,10 +4,12 @@ val daySolvers = listOf(::day1, ::day2, ::day3, ::day4, ::day5, ::day6, ::day7, 
 
 fun main(args: Array<String>) {
 
-    for (i in 1..daySolvers.size) {
+    /**for (i in 1..daySolvers.size) {
         daySolvers[i-1](readFile("day$i.txt"))
         println()
-    }
+    }*/
+    
+    day16(readFile("day16.txt"))
 }
 
 fun readFile(fileName: String): List<String> {
