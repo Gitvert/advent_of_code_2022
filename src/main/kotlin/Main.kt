@@ -9,7 +9,7 @@ fun main(args: Array<String>) {
         println()
     }*/
     
-    day15(readFile("day15.txt"))
+    day19(readFile("day19.txt"))
 }
 
 fun readFile(fileName: String): List<String> {
