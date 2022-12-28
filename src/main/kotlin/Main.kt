@@ -4,12 +4,14 @@ val daySolvers = listOf(::day1, ::day2, ::day3, ::day4, ::day5, ::day6, ::day7, 
 
 fun main(args: Array<String>) {
 
-    /**for (i in 1..daySolvers.size) {
+    println("Starting at ${java.util.Calendar.getInstance().time}")
+    
+    for (i in 1..daySolvers.size) {
         daySolvers[i-1](readFile("day$i.txt"))
         println()
-    }*/
-    
-    day19(readFile("day19.txt"))
+    }
+
+    println("Ending at ${java.util.Calendar.getInstance().time}")
 }
 
 fun readFile(fileName: String): List<String> {
@@ -19,5 +21,3 @@ fun readFile(fileName: String): List<String> {
 
     return lines
 }
-
-data class Position(val x: Int, val y: Int)

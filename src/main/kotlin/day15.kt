@@ -21,7 +21,6 @@ fun findDistressBeacon(sensors: List<Sensor>): Point {
     var notPossible = 0
 
     sensors.forEachIndexed { index, sensor ->
-        println("Starting checking sensor $index")
         sensor.perimeterPoints.forEach { point ->
             run breaking@{
                 notPossible = 0
