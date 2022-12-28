@@ -2,9 +2,9 @@ fun day23(lines: List<String>) {
     val elfPositions = parseElfPositions(lines)
     val directionOrder = mutableListOf(Direction(0, -1), Direction(0, 1), Direction(-1, 0), Direction(1,0))
 
-    /*val roundsNeeded = simulateRounds(elfPositions, directionOrder)
+    val roundsNeeded = simulateRounds(elfPositions, directionOrder)
 
-    println("Day 23 part 2: $roundsNeeded")*/
+    println("Day 23 part 2: $roundsNeeded")
 }
 
 fun findEmptyGroundTiles(elfPositions: Map<Int, ElfPosition>): Int {
