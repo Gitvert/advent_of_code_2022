@@ -6,26 +6,25 @@ const val MAX_VALUE = Y_ROW * 2
 fun day15(lines: List<String>) {
     val sensors = findSensors(lines)
     val xRange = findXRange(sensors)
-    computeExtraData(sensors)
 
-    val answer = noOfNonBeaconPositions(sensors, xRange)
+    val answer = findNoBeaconPositions(sensors, xRange)
 
     println("Day 15 part 1: $answer")
 
     val answer2 = findDistressBeacon(sensors)
 
-    println("Day 15 part 2: ${answer2.x * 4000000 + answer2.y}")
+    println("Day 15 part 2: ${answer2.x * MAX_VALUE + answer2.y}")
 }
 
 fun findDistressBeacon(sensors: List<Sensor>): Point {
     var notPossible = 0
 
-    sensors.forEachIndexed { index, sensor ->
+    sensors.forEach { sensor ->
         sensor.perimeterPoints.forEach { point ->
             run breaking@{
                 notPossible = 0
                 sensors.forEach { innerSensor ->
-                    if (pointIsInTriangle(point, innerSensor.bottomTriangle!!) || pointIsInTriangle(point, innerSensor.topTriangle!!)) {
+                    if (getManhattanDistance(innerSensor.position, point) <= innerSensor.closestBeaconDistance) {
                         notPossible++
                         return@breaking
                     }
@@ -40,28 +39,24 @@ fun findDistressBeacon(sensors: List<Sensor>): Point {
     return Point(0, 0)
 }
 
-fun noOfNonBeaconPositions(sensors: List<Sensor>, xRange: LongRange): Int {
-    val noBeaconPositions = mutableSetOf<Point>()
+fun findNoBeaconPositions(sensors: List<Sensor>, xRange: LongRange): Int {
+    var noBeaconPositions = 0
     for (i in xRange) {
-        sensors.forEach {
-            if ((pointIsInTriangle(Point(i, Y_ROW), it.topTriangle!!) || pointIsInTriangle(Point(i, Y_ROW), it.bottomTriangle!!)) && Point(i, Y_ROW) != it.closestBeacon) {
-                noBeaconPositions.add(Point(i, Y_ROW))
+        var noBeaconHere = false
+        run breaking@{
+            sensors.forEach {
+                if (getManhattanDistance(it.position, Point(i, Y_ROW)) <= it.closestBeaconDistance) {
+                    noBeaconHere = true
+                    return@breaking
+                }
             }
+        }
+        if (noBeaconHere) {
+            noBeaconPositions++
         }
     }
 
-    return noBeaconPositions.size
-}
-
-fun computeExtraData(sensors: List<Sensor>) {
-    sensors.forEach {
-        val distance = it.closestBeaconDistance
-
-        it.topTriangle = Triangle(Point(it.position.x + distance, it.position.y), Point(it.position.x, it.position.y - distance), Point(it.position.x - distance, it.position.y))
-        it.bottomTriangle = Triangle(Point(it.position.x + distance, it.position.y), Point(it.position.x, it.position.y + distance), Point(it.position.x - distance, it.position.y))
-
-        computePerimeterPoints(it)
-    }
+    return noBeaconPositions
 }
 
 fun computePerimeterPoints(sensor: Sensor) {
@@ -114,8 +109,10 @@ fun findSensors(lines: List<String>): List<Sensor> {
         val line = it.replace("Sensor at x=", "").replace(" closest beacon is at x=", "").replace(" y=", "")
         val sensorPos = Point(line.split(":")[0].split(",")[0].toLong(), line.split(":")[0].split(",")[1].toLong())
         val beaconPos = Point(line.split(":")[1].split(",")[0].toLong(), line.split(":")[1].split(",")[1].toLong())
-
-        sensors.add(Sensor(sensorPos, beaconPos, getManhattanDistance(sensorPos, beaconPos), null, null, mutableListOf()))
+        
+        val sensor = Sensor(sensorPos, beaconPos, getManhattanDistance(sensorPos, beaconPos), mutableListOf())
+        computePerimeterPoints(sensor)
+        sensors.add(sensor)
     }
 
     return sensors
@@ -129,32 +126,11 @@ fun getManhattanDistance(left: Point, right: Point): Long {
     return abs(left.x - right.x) + abs(left.y - right.y)
 }
 
-fun pointIsInTriangle(point: Point, triangle: Triangle): Boolean {
-    val a = triangleArea(triangle)
-
-    val a1 = triangleArea(Triangle(point, triangle.b, triangle.c))
-
-    val a2 = triangleArea(Triangle(triangle.a, point, triangle.c))
-
-    val a3 = triangleArea(Triangle(triangle.a, triangle.b, point))
-    Triangle(triangle.a, triangle.b, point)
-
-    return (a == a1 + a2 + a3)
-}
-
-fun triangleArea(triangle: Triangle): Double {
-    return abs((triangle.a.x*(triangle.b.y-triangle.c.y)+triangle.b.x*(triangle.c.y-triangle.a.y)+triangle.c.x*(triangle.a.y-triangle.b.y))/2.0)
-}
-
 data class Point(val x: Long, val y: Long)
 
 data class Sensor(
     val position: Point,
     val closestBeacon: Point,
     val closestBeaconDistance: Long,
-    var topTriangle: Triangle?,
-    var bottomTriangle: Triangle?,
     val perimeterPoints: MutableList<Point>
 )
-
-data class Triangle(val a: Point, val b: Point, val c: Point)
